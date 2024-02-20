@@ -43,7 +43,7 @@ public class FileService implements FileServiceInterface {
     @Override
     @Transactional
     public HomeworkFileDto getFile(Long id) {
-        HomeworkFile homeworkFile = fileRepository.findById(id).orElseThrow(() -> new NullPointerException("File is not fount"));
-        return homeworkFile.toDto();
+       HomeworkFile homeworkFile = fileRepository.findById(id).orElseThrow(() -> new NullPointerException("File is not fount"));
+       return homeworkFile.toDto();
     }
 }

@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -36,6 +35,8 @@ public class ChatController {
 
     @Value(value = "${openai.api.url}")
     private String apiUrl;
+    private String s = "Look at the code and answer \"OK\" if the code is correct, if the code is not correct, advise what to fix. task conditions: " + "\n";
+
 
     @PostMapping("/chat")
     public String chat(@RequestPart("file") MultipartFile file) throws Exception {
@@ -43,35 +44,34 @@ public class ChatController {
         if (file.isEmpty()) {
             throw new NullPointerException("File is empty or not select.");
         }
-        //"Look at the code and answer \"ok\" if the code is correct, if the code is not correct, advise what to fix. task conditions: ";
-        if (checkFile(file)) {
-            String text = "";
-            try {
-                InputStream initialStream = file.getInputStream();
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(initialStream, StandardCharsets.UTF_8));
-                StringBuilder stringBuilder = new StringBuilder();
-                String line;
-                while ((line = bufferedReader.readLine()) != null) {
-                    stringBuilder.append(line).append("\n");
-                }
-                bufferedReader.close();
-                text = stringBuilder.toString();
-            } catch (IOException e) {
-                e.printStackTrace();
+        if (!checkFile(file)) {
+            throw new IllegalArgumentException("Not correct file's format.");
+        }
+        String text = "";
+        try {
+            InputStream initialStream = file.getInputStream();
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(initialStream, StandardCharsets.UTF_8));
+            StringBuilder stringBuilder = new StringBuilder();
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                stringBuilder.append(line).append("\n");
             }
-
-            ChatRequestDto request = new ChatRequestDto(model, text);
-            ChatResponseDto response = restTemplate.postForObject(apiUrl, request, ChatResponseDto.class);
-            if (response == null || response.getChoices() == null || response.getChoices().isEmpty()) {
-                return "No response";
-            }
-            if (response.getChoices().get(0).getMessage().getContent().equals("ok")) {
-               fileService.saveAttachment(file);
-            } else {
-                return response.getChoices().get(0).getMessage().getContent();
-            }
+            bufferedReader.close();
+            text = s + stringBuilder.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
+        ChatRequestDto request = new ChatRequestDto(model, text);
+        ChatResponseDto response = restTemplate.postForObject(apiUrl, request, ChatResponseDto.class);
+        if (response == null || response.getChoices() == null || response.getChoices().isEmpty()) {
+            return "No response";
+        }
+        if (response.getChoices().get(0).getMessage().getContent().equals("OK")) {
+            fileService.saveAttachment(file);
+        } else {
+            return response.getChoices().get(0).getMessage().getContent();
+        }
         return "Homework is correct and save.";
     }
 
@@ -81,8 +81,7 @@ public class ChatController {
             String typeFile = fileName.substring(fileName.lastIndexOf(".") + 1);
             List<String> format = List.of("doc", "docx", "docm", "dot", "dotx", "txt");
             if (format.stream().anyMatch(a -> a.equals(typeFile))) {
-            } else {
-                throw new IllegalArgumentException("Not correct file's format.");
+                return true;
             }
         }
         return false;
