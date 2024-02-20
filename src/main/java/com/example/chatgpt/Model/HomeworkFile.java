@@ -1,5 +1,6 @@
 package com.example.chatgpt.Model;
 
+import com.example.chatgpt.DTO.HomeworkFileDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,5 +25,9 @@ public class HomeworkFile {
         this.fileName = fileName;
         this.fileType = fileType;
         this.data = data;
+    }
+
+    public HomeworkFileDto toDto() {
+        return new HomeworkFileDto(this.id, this.fileName, this.fileType, this.data);
     }
 }

@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
@@ -36,34 +38,54 @@ public class ChatController {
     private String apiUrl;
 
     @PostMapping("/chat")
-    public String chat(@RequestPart("file") MultipartFile file) {
+    public String chat(@RequestPart("file") MultipartFile file) throws Exception {
 
-        String text = "";
-
-        try {
-            InputStream initialStream = file.getInputStream();
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(initialStream, StandardCharsets.UTF_8));
-            StringBuilder stringBuilder = new StringBuilder();
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                stringBuilder.append(line).append("\n");
+        if (file.isEmpty()) {
+            throw new NullPointerException("File is empty or not select.");
+        }
+        //"Look at the code and answer \"ok\" if the code is correct, if the code is not correct, advise what to fix. task conditions: ";
+        if (checkFile(file)) {
+            String text = "";
+            try {
+                InputStream initialStream = file.getInputStream();
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(initialStream, StandardCharsets.UTF_8));
+                StringBuilder stringBuilder = new StringBuilder();
+                String line;
+                while ((line = bufferedReader.readLine()) != null) {
+                    stringBuilder.append(line).append("\n");
+                }
+                bufferedReader.close();
+                text = stringBuilder.toString();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            bufferedReader.close();
-            text = stringBuilder.toString();
 
-        } catch (IOException e) {
-            e.printStackTrace();
+            ChatRequestDto request = new ChatRequestDto(model, text);
+            ChatResponseDto response = restTemplate.postForObject(apiUrl, request, ChatResponseDto.class);
+            if (response == null || response.getChoices() == null || response.getChoices().isEmpty()) {
+                return "No response";
+            }
+            if (response.getChoices().get(0).getMessage().getContent().equals("ok")) {
+               fileService.saveAttachment(file);
+            } else {
+                return response.getChoices().get(0).getMessage().getContent();
+            }
         }
 
-        ChatRequestDto request = new ChatRequestDto(model, text);
-        ChatResponseDto response = restTemplate.postForObject(apiUrl, request, ChatResponseDto.class);
-        if (response == null || response.getChoices() == null || response.getChoices().isEmpty()) {
-            return "No response";
-        }
-
-
-        return response.getChoices().get(0).getMessage().getContent();
-
-
+        return "Homework is correct and save.";
     }
+
+    public static boolean checkFile(MultipartFile file) {
+        String fileName = file.getOriginalFilename();
+        if (fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0) {
+            String typeFile = fileName.substring(fileName.lastIndexOf(".") + 1);
+            List<String> format = List.of("doc", "docx", "docm", "dot", "dotx", "txt");
+            if (format.stream().anyMatch(a -> a.equals(typeFile))) {
+            } else {
+                throw new IllegalArgumentException("Not correct file's format.");
+            }
+        }
+        return false;
+    }
+
 }

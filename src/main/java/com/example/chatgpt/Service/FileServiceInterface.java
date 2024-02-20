@@ -1,11 +1,11 @@
 package com.example.chatgpt.Service;
 
 
-import com.example.chatgpt.Model.HomeworkFile;
+import com.example.chatgpt.DTO.HomeworkFileDto;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface FileServiceInterface {
     void saveAttachment(MultipartFile file) throws Exception;
 
-    HomeworkFile getFile(Long id);
+    HomeworkFileDto getFile(Long id);
 }

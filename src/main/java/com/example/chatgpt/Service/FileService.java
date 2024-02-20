@@ -1,5 +1,6 @@
 package com.example.chatgpt.Service;
 
+import com.example.chatgpt.DTO.HomeworkFileDto;
 import com.example.chatgpt.Model.HomeworkFile;
 import com.example.chatgpt.Repository.FileRepository;
 import org.springframework.stereotype.Service;
@@ -41,7 +42,8 @@ public class FileService implements FileServiceInterface {
 
     @Override
     @Transactional
-    public HomeworkFile getFile(Long id) {
-        return fileRepository.findById(id).orElseThrow(() -> new NullPointerException("File is not fount"));
+    public HomeworkFileDto getFile(Long id) {
+        HomeworkFile homeworkFile = fileRepository.findById(id).orElseThrow(() -> new NullPointerException("File is not fount"));
+        return homeworkFile.toDto();
     }
 }
